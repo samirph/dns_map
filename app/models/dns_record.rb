@@ -7,4 +7,6 @@ class DnsRecord < ApplicationRecord
   alias_attribute :ip, :ipv4
 
   validates :ipv4, presence: true
+
+  accepts_nested_attributes_for :hostnames
 end
