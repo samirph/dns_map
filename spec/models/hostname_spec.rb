@@ -3,5 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Hostname, type: :model do
-  pending "add some examples to (or delete) #{__FILE__}"
+  describe 'associations' do
+    it { should have_many(:dns_records).through(:dns_records_hostnames) }
+  end
 end
