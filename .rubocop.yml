@@ -3,3 +3,4 @@ AllCops:
   NewCops: enable
   Include:
     - 'app/**/*.rb'
+    - 'spec/**/*.rb'
