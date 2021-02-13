@@ -14,6 +14,6 @@ class DnsRecordsController < ApplicationController
   private
 
   def dns_record_params
-    params.permit(:ip, :hostnames_attributes)
+    params.permit(:ip, hostnames_attributes: [:hostname])
   end
 end
