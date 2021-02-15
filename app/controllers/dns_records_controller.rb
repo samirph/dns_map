@@ -5,8 +5,7 @@ class DnsRecordsController < ApplicationController
   before_action :validate_pagination_params, only: [:index]
   def index
     excluded_dns_record_ids = DnsRecordsHostname
-                              .joins(:hostname)
-                              .where(hostname: { name: index_params[:excluded] })
+                              .excluded_by_hostname(index_params[:excluded])
                               .pluck(:dns_record_id)
 
     result_ids = DnsRecord
