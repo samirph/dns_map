@@ -32,6 +32,13 @@ RSpec.describe 'DnsRecords', type: :request do
       expect(response.parsed_body['related_hostnames'][1]['hostname']).to eq('amet.com')
     end
 
+    it 'paginates correctly' do
+      get '/dns-records', params: { page: 1, included: ['ipsum.com', 'dolor.com'] }
+      expect(response.parsed_body['total_records']).to eq(2)
+      get '/dns-records', params: { page: 2, included: ['ipsum.com', 'dolor.com'] }
+      expect(response.parsed_body['total_records']).to eq(1)
+    end
+
     it 'returns status bad request when missing the page param' do
       get '/dns-records', params: {}
 

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class DnsRecordsController < ApplicationController
+  PAGINATION_SIZE = 2
   before_action :validate_pagination_params, only: [:index]
   def index
     excluded_dns_record_ids = DnsRecordsHostname
@@ -10,6 +11,8 @@ class DnsRecordsController < ApplicationController
 
     result_ids = DnsRecord
                  .includes(:hostnames)
+                 .offset((params[:page].to_i - 1) * PAGINATION_SIZE)
+                 .limit(PAGINATION_SIZE)
                  .where.not(id: excluded_dns_record_ids)
                  .where(hostnames: { name: index_params[:included] })
                  .group('id', 'dns_records_hostnames.dns_record_id')
@@ -18,7 +21,7 @@ class DnsRecordsController < ApplicationController
 
     result = DnsRecord
              .includes(hostnames: :dns_records)
-             .where.not(hostnames: { name: index_params[:included] + index_params[:excluded] })
+             .where.not(hostnames: { name: index_params[:included] || [] + index_params[:excluded] || [] })
              .find(result_ids)
 
     render json: {
