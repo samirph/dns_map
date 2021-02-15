@@ -1,6 +1,33 @@
 # frozen_string_literal: true
 
 class DnsRecordsController < ApplicationController
+  before_action :validate_pagination_params, only: [:index]
+  def index
+    excluded_dns_record_ids = DnsRecordsHostname
+                              .joins(:hostname)
+                              .where(hostname: { name: index_params[:excluded] })
+                              .pluck(:dns_record_id)
+
+    result_ids = DnsRecord
+                 .includes(:hostnames)
+                 .where.not(id: excluded_dns_record_ids)
+                 .where(hostnames: { name: index_params[:included] })
+                 .group('id', 'dns_records_hostnames.dns_record_id')
+                 .having('count(hostnames.id) >= %s', index_params[:included].size)
+                 .pluck(:dns_record_id)
+
+    result = DnsRecord
+             .includes(hostnames: :dns_records)
+             .where.not(hostnames: { name: index_params[:included] + index_params[:excluded] })
+             .find(result_ids)
+
+    render json: {
+      total_records: result.size,
+      records: result.map { |dns_record| { id: dns_record.id, ip_address: dns_record.ip } },
+      related_hostnames: format_result_related_hostnames(result, result_ids)
+    }
+  end
+
   def create
     dns_record = DnsRecord.new(dns_record_params)
 
@@ -15,5 +42,25 @@ class DnsRecordsController < ApplicationController
 
   def dns_record_params
     params.permit(:ip, hostnames_attributes: [:hostname])
+  end
+
+  def validate_pagination_params
+    return head :bad_request if params[:page].blank?
+  end
+
+  def index_params
+    params.permit(:page, included: [], excluded: [])
+  end
+
+  def format_result_related_hostnames(result, allowed_dns_record_ids)
+    hostnames = result.map(&:hostnames).flatten.uniq
+    hostnames.map do |hostname|
+      {
+        hostname: hostname.name,
+        count: hostname.dns_records.select do |record|
+                 allowed_dns_record_ids.include?(record.id)
+               end.size
+      }
+    end
   end
 end
