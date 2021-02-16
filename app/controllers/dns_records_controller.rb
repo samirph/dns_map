@@ -20,8 +20,7 @@ class DnsRecordsController < ApplicationController
 
     result = DnsRecord
              .includes(hostnames: :dns_records)
-             .where.not(hostnames: { name: index_params[:included] || [] + index_params[:excluded] || [] })
-             .find(result_ids)
+             .where(id: result_ids)
 
     render json: {
       total_records: result.size,
@@ -55,8 +54,10 @@ class DnsRecordsController < ApplicationController
   end
 
   def format_result_related_hostnames(result, allowed_dns_record_ids)
+    non_related_hostnames = index_params[:included] || [] + index_params[:excluded] || [] 
     hostnames = result.map(&:hostnames).flatten.uniq
-    hostnames.map do |hostname|
+    filtered_hostnames = hostnames.select{|hostname| !non_related_hostnames.include?(hostname.name) }
+    filtered_hostnames.map do |hostname|
       {
         hostname: hostname.name,
         count: hostname.dns_records.select do |record|
